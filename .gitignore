@@ -1,0 +1,88 @@
+
+# MDK-ARM
+*.__i
+*._ia
+*.axf
+*.bak
+*.bin
+*.crf
+*.d
+*.dep
+*.hex
+*.htm
+*.html
+*.iex
+*.lnp
+*.log
+*.lst
+*.map
+*.o
+*.sct
+*.scvd
+*.tmp
+*.uvguix.*
+JLinkLog.txt
+*.dbgconf
+MDK-ARM/RTE/
+
+# EWARM
+*.crun
+*.cspy
+*.cspy.*
+*.dbgdt
+*.dni
+*.ewt
+*.jlink
+*.out
+*.pbi
+*.pbi.*
+*.pbd
+*.pbd.*
+*.sim
+*.wsdt
+*.wspos
+*.xcl
+*.xml
+*.pbw
+*.dnx
+*.reggroups
+
+# GCC
+*.elf
+
+# SW4STM32
+SW4STM32/*/Debug/
+SW4STM32/*/Release/
+SW4STM32/*/.gitignore
+SW4STM32/*/*.cfg
+
+# TrueSTUDIO
+TrueSTUDIO/*/Debug/
+TrueSTUDIO/*/Release/
+TrueSTUDIO/*/.gitignore
+TrueSTUDIO/*/.settings/*.prefs
+!TrueSTUDIO/*/.settings/com.atollic.truestudio.debug.hardware_device.prefs
+
+# CMSIS Lib
+Drivers/CMSIS/DSP/
+Drivers/CMSIS/DSP_Lib/
+Drivers/CMSIS/Lib/
+Drivers/CMSIS/Device/ST/STM32F*xx/Source/
+Drivers/CMSIS/Device/ST/STM32H*xx/Source/
+Drivers/CMSIS/RTOS/
+
+# template
+*/*template.*
+*/*/*template.*
+*/*/*/*template.*
+*/*/*/*/*template.*
+*/*/*/*/*/*template.*
+*/*/*/*/*/*/*template.*
+*/*/*/*/*/*/*/*template.*
+*/*/*/*/*/*/*/*/*template.*
+
+# VS Code
+.vscode/
+
+# STM32CubeMX
+.mxproject
