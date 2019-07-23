@@ -72,7 +72,7 @@
 /* Disk status */
 static volatile DSTATUS Stat = STA_NOINIT;
 
-#define STORAGE_BLK_OFF (0x200)
+#define STORAGE_BLK_OFF (0x100)
 extern NORFLASH_OBJ FatFlash;
 /* USER CODE END DECL */
 

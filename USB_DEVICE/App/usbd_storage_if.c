@@ -97,7 +97,7 @@ extern NORFLASH_OBJ FatFlash;
 #define STORAGE_BLK_SIZ                  0x200
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-#define STORAGE_BLK_OFF (0x200)
+#define STORAGE_BLK_OFF (0x100)
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
