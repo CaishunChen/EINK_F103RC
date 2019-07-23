@@ -71,6 +71,9 @@ static void wait_busy(void *obj)
 
 static void data_read(void *obj, int addr, void *buf, int length)
 {
+    if (obj == NULL)
+        return;
+
     NORFLASH_OBJ *Obj = obj;
 
     addr <<= 8;
@@ -135,6 +138,9 @@ static void page_program(void *obj, int addr, void *buf, int length)
 
 static void data_write(void *obj, int addr, void *buf, int length)
 {
+    if (obj == NULL)
+        return;
+
     int  Length = 0;
     int  inPageLength = 0;
     char *pData = NULL;
@@ -228,6 +234,9 @@ static void soft_reset(void *obj)
 
 static void init(void *obj)
 {
+    if (obj == NULL)
+        return;
+
     NORFLASH_OBJ *Obj = obj;
 
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -243,7 +252,8 @@ static void init(void *obj)
 
     Obj->Desc = find_desc(read_jedec(obj));
 
-    soft_reset(obj);
+    if ((Obj->Desc) && ((Obj->Desc->Jedec & 0xFF0000) == 0xEF0000))
+        soft_reset(obj);
 }
 
 void *BSP_NORFLASH_API(void)
