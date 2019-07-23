@@ -60,7 +60,7 @@
 #endif
 
 /* USER CODE BEGIN DECL */
-
+#include "bsp_norflash.h"
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include "ff_gen_drv.h"
@@ -72,6 +72,8 @@
 /* Disk status */
 static volatile DSTATUS Stat = STA_NOINIT;
 
+#define STORAGE_BLK_OFF (0x200)
+extern NORFLASH_OBJ FatFlash;
 /* USER CODE END DECL */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -110,7 +112,7 @@ DSTATUS USER_initialize (
 )
 {
   /* USER CODE BEGIN INIT */
-    Stat = STA_NOINIT;
+    Stat &= ~STA_NOINIT;
     return Stat;
   /* USER CODE END INIT */
 }
@@ -125,7 +127,7 @@ DSTATUS USER_status (
 )
 {
   /* USER CODE BEGIN STATUS */
-    Stat = STA_NOINIT;
+    Stat &= ~STA_NOINIT;
     return Stat;
   /* USER CODE END STATUS */
 }
@@ -146,6 +148,8 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
+    NORFLASH_API *norapi = BSP_NORFLASH_API();
+    norapi->DataRead(&FatFlash, (STORAGE_BLK_OFF + sector) * FatFlash.Desc->SecSize, (void *)buff, count * FatFlash.Desc->SecSize);
     return RES_OK;
   /* USER CODE END READ */
 }
@@ -168,6 +172,8 @@ DRESULT USER_write (
 { 
   /* USER CODE BEGIN WRITE */
   /* USER CODE HERE */
+    NORFLASH_API *norapi = BSP_NORFLASH_API();
+    norapi->DataWrite(&FatFlash, (STORAGE_BLK_OFF + sector) * FatFlash.Desc->SecSize, (void *)buff, count * FatFlash.Desc->SecSize);
     return RES_OK;
   /* USER CODE END WRITE */
 }
@@ -189,6 +195,26 @@ DRESULT USER_ioctl (
 {
   /* USER CODE BEGIN IOCTL */
     DRESULT res = RES_ERROR;
+    switch (cmd)
+    {
+      case CTRL_SYNC:
+        res = RES_OK;
+        break;
+      case GET_SECTOR_SIZE:
+        *(WORD*)buff = FatFlash.Desc->SecSize;
+        res = RES_OK;
+        break;
+      case GET_SECTOR_COUNT:
+        *(DWORD*)buff = FatFlash.Desc->Sectors - STORAGE_BLK_OFF;
+        res = RES_OK;
+        break;
+      case GET_BLOCK_SIZE:
+        *(DWORD*)buff = 1;
+        res = RES_OK;
+        break;
+      default:
+        break;
+    }
     return res;
   /* USER CODE END IOCTL */
 }

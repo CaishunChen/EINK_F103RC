@@ -56,14 +56,18 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "bsp_norflash.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+NORFLASH_OBJ FatFlash = {
+  .Handle = &hspi1,
+  .CS     = {GPIOA, GPIO_PIN_4},
+  .Desc   = NULL,
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -113,14 +117,53 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
+  __HAL_SPI_ENABLE(&hspi1);
+  __HAL_SPI_ENABLE(&hspi2);
 
+  uint8_t state = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
+
+  if (state == 0)
+  {
+    NORFLASH_API *norapi = BSP_NORFLASH_API();
+    norapi->Init(&FatFlash);
+
+    retUSER = f_mount(&USERFatFS, USERPath, 1);
+    if (retUSER != FR_OK)
+      retUSER = f_mkfs(USERPath, 0, 4096);
+  }
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_SET);
+
+  if (state == 0)
+  {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+    HAL_IWDG_Refresh(&hiwdg);
+    HAL_Delay(500);
+    if (state == 0)
+    {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_1);
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3))
+      {
+        __disable_irq();
+        HAL_NVIC_SystemReset();
+      }
+    }
+    else
+    {
+      HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_0);
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3) == 0)
+      {
+        __disable_irq();
+        HAL_NVIC_SystemReset();
+      }
+    }
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */

@@ -51,7 +51,8 @@
 #include "usbd_storage_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "iwdg.h"
+#include "bsp_norflash.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -60,7 +61,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+extern NORFLASH_OBJ FatFlash;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -96,7 +97,7 @@
 #define STORAGE_BLK_SIZ                  0x200
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-
+#define STORAGE_BLK_OFF (0x200)
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -220,8 +221,8 @@ int8_t STORAGE_Init_FS(uint8_t lun)
 int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
   /* USER CODE BEGIN 3 */
-  *block_num  = STORAGE_BLK_NBR;
-  *block_size = STORAGE_BLK_SIZ;
+  *block_num  = FatFlash.Desc->Sectors - STORAGE_BLK_OFF;
+  *block_size = FatFlash.Desc->SecSize;
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -258,6 +259,9 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
+  NORFLASH_API *norapi = BSP_NORFLASH_API();
+  HAL_IWDG_Refresh(&hiwdg);
+  norapi->DataRead(&FatFlash, (STORAGE_BLK_OFF + blk_addr) * FatFlash.Desc->SecSize, buf, blk_len * FatFlash.Desc->SecSize);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -270,6 +274,9 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
+  NORFLASH_API *norapi = BSP_NORFLASH_API();
+  HAL_IWDG_Refresh(&hiwdg);
+  norapi->DataWrite(&FatFlash, (STORAGE_BLK_OFF + blk_addr) * FatFlash.Desc->SecSize, buf, blk_len * FatFlash.Desc->SecSize);
   return (USBD_OK);
   /* USER CODE END 7 */
 }
