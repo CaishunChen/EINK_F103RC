@@ -6,6 +6,15 @@
 #define CS_High(GPIO, Pin) (((GPIO_TypeDef *)GPIO)->BSRR = Pin)
 #define CS_Low(GPIO, Pin)  (((GPIO_TypeDef *)GPIO)->BSRR = Pin << 16)
 
+#define MFR_WINBOND  (0xEF)
+#define MFR_MACRONIX (0xC2)
+
+#define OBJ_MFR_BYTE(OBJ) (((NORFLASH_OBJ *)OBJ)->Desc->Jedec & 0xFF0000)
+
+#define IS_MFR_CHIP(OBJ, MFR) (OBJ_MFR_BYTE(OBJ) == (MFR << 16))
+
+#define IS_WINBOND_CHIP(OBJ) IS_MFR_CHIP(OBJ, MFR_WINBOND)
+
 #define NOR_SECTOR_SIZE (4 * 1024)
 
 static char nor_buf[NOR_SECTOR_SIZE] = {0};
@@ -16,14 +25,6 @@ static const NORFLASH_DESC Descs[] = {
     {"W25Q32",    0xEF4016, 256, 4, 64,  4 * 1024},
     {"MX25L3206", 0xC22016, 256, 4, 64,  4 * 1024},
 };
-
-#define OBJ_MFR_BYTE(OBJ)     (((NORFLASH_OBJ *)OBJ)->Desc->Jedec & 0xFF0000)
-
-#define MFR_WINBOND           (0xEF)
-#define MFR_MACRONIX          (0xC2)
-
-#define IS_MFR_CHIP(OBJ, MFR) (OBJ_MFR_BYTE(OBJ) == (MFR << 16))
-#define IS_WINBOND_CHIP(OBJ)  IS_MFR_CHIP(OBJ, MFR_WINBOND)
 
 #define DESCS_NUM (sizeof(Descs)/sizeof(NORFLASH_DESC))
 
