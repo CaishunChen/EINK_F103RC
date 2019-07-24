@@ -259,9 +259,9 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
-  NORFLASH_API *norapi = BSP_NORFLASH_API();
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
   HAL_IWDG_Refresh(&hiwdg);
-  norapi->DataRead(&FatFlash, (STORAGE_SIZEK_OFF / 4 + blk_addr) * FatFlash.Desc->SecSizeK * 1024, buf, blk_len * FatFlash.Desc->SecSizeK * 1024);
+  norflash->DataRead(&FatFlash, (STORAGE_SIZEK_OFF / 4 + blk_addr) * FatFlash.Desc->SecSizeK * 1024, buf, blk_len * FatFlash.Desc->SecSizeK * 1024);
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -274,9 +274,9 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-  NORFLASH_API *norapi = BSP_NORFLASH_API();
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
   HAL_IWDG_Refresh(&hiwdg);
-  norapi->DataWrite(&FatFlash, (STORAGE_SIZEK_OFF / 4 + blk_addr) * FatFlash.Desc->SecSizeK * 1024, buf, blk_len * FatFlash.Desc->SecSizeK * 1024);
+  norflash->DataWrite(&FatFlash, (STORAGE_SIZEK_OFF / 4 + blk_addr) * FatFlash.Desc->SecSizeK * 1024, buf, blk_len * FatFlash.Desc->SecSizeK * 1024);
   return (USBD_OK);
   /* USER CODE END 7 */
 }

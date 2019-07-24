@@ -63,11 +63,11 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-NORFLASH_OBJ FatFlash = {
-  .Handle = &hspi1,
-  .CS     = {GPIOA, GPIO_PIN_4},
-  .Desc   = NULL,
-};
+NORFLASH_OBJ FatFlash = {&hspi1, {GPIOA, GPIO_PIN_4}, NULL};
+
+static NORFLASH_OBJ DatFlash = {&hspi2, {GPIOC, GPIO_PIN_8}, NULL};
+static NORFLASH_OBJ LedFlash = {&hspi2, {GPIOC, GPIO_PIN_7}, NULL};
+static NORFLASH_OBJ ItFlash  = {&hspi2, {GPIOC, GPIO_PIN_6}, NULL};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,11 +121,14 @@ int main(void)
   __HAL_SPI_ENABLE(&hspi2);
 
   uint8_t state = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
 
   if (state == 0)
   {
-    NORFLASH_API *norapi = BSP_NORFLASH_API();
-    norapi->Init(&FatFlash);
+    norflash->Init(&FatFlash);
+    norflash->Init(&DatFlash);
+    norflash->Init(&LedFlash);
+    norflash->Init(&ItFlash);
 
     retUSER = f_mount(&USERFatFS, USERPath, 1);
     if (retUSER != FR_OK)

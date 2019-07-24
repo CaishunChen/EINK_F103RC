@@ -148,8 +148,8 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
-    NORFLASH_API *norapi = BSP_NORFLASH_API();
-    norapi->DataRead(&FatFlash, (STORAGE_SIZEK_OFF / 4 + sector) * FatFlash.Desc->SecSizeK * 1024, (void *)buff, count * FatFlash.Desc->SecSizeK * 1024);
+    NORFLASH_API *norflash = BSP_NORFLASH_API();
+    norflash->DataRead(&FatFlash, (STORAGE_SIZEK_OFF / 4 + sector) * FatFlash.Desc->SecSizeK * 1024, (void *)buff, count * FatFlash.Desc->SecSizeK * 1024);
     return RES_OK;
   /* USER CODE END READ */
 }
@@ -172,8 +172,8 @@ DRESULT USER_write (
 { 
   /* USER CODE BEGIN WRITE */
   /* USER CODE HERE */
-    NORFLASH_API *norapi = BSP_NORFLASH_API();
-    norapi->DataWrite(&FatFlash, (STORAGE_SIZEK_OFF / 4 + sector) * FatFlash.Desc->SecSizeK * 1024, (void *)buff, count * FatFlash.Desc->SecSizeK * 1024);
+    NORFLASH_API *norflash = BSP_NORFLASH_API();
+    norflash->DataWrite(&FatFlash, (STORAGE_SIZEK_OFF / 4 + sector) * FatFlash.Desc->SecSizeK * 1024, (void *)buff, count * FatFlash.Desc->SecSizeK * 1024);
     return RES_OK;
   /* USER CODE END WRITE */
 }
