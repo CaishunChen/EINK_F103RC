@@ -1,5 +1,6 @@
 
 #include "bsp_header.h"
+#include "iwdg.h"
 #include "spi.h"
 #include "bsp_norflash.h"
 
@@ -53,7 +54,10 @@ static void wait_write_enable(void *obj)
     CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
     HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x05}, 1, HAL_MAX_DELAY);
     do
+    {
+        HAL_IWDG_Refresh(&hiwdg);
         HAL_SPI_Receive(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+    }
     while (!(status & 0x02));
     CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 }
@@ -74,7 +78,10 @@ static void wait_busy(void *obj)
     CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
     HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x05}, 1, HAL_MAX_DELAY);
     do
+    {
+        HAL_IWDG_Refresh(&hiwdg);
         HAL_SPI_Receive(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+    }
     while (status & 0x01);
     CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 }

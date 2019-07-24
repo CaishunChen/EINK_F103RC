@@ -67,7 +67,7 @@ NORFLASH_OBJ FatFlash = {&hspi1, {GPIOA, GPIO_PIN_4}, NULL};
 
 static NORFLASH_OBJ DatFlash = {&hspi2, {GPIOC, GPIO_PIN_8}, NULL};
 static NORFLASH_OBJ LedFlash = {&hspi2, {GPIOC, GPIO_PIN_7}, NULL};
-static NORFLASH_OBJ ItFlash  = {&hspi2, {GPIOC, GPIO_PIN_6}, NULL};
+//static NORFLASH_OBJ ItFlash  = {&hspi2, {GPIOC, GPIO_PIN_6}, NULL};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,7 +75,9 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+static void FileToFlash(void *, void *, void (*)(void *));
+static void DatCallBack(void *);
+static void AllCallBack(void *);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -123,16 +125,21 @@ int main(void)
   uint8_t state = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
   NORFLASH_API *norflash = BSP_NORFLASH_API();
 
+  norflash->Init(&FatFlash);
+
+  retUSER = f_mount(&USERFatFS, USERPath, 1);
+  if (retUSER != FR_OK)
+    retUSER = f_mkfs(USERPath, 0, 4096);
+
   if (state == 0)
   {
-    norflash->Init(&FatFlash);
     norflash->Init(&DatFlash);
     norflash->Init(&LedFlash);
-    norflash->Init(&ItFlash);
+    //norflash->Init(&ItFlash);
 
-    retUSER = f_mount(&USERFatFS, USERPath, 1);
-    if (retUSER != FR_OK)
-      retUSER = f_mkfs(USERPath, 0, 4096);
+    FileToFlash(&DatFlash, "FPGA-DATA.bin",   DatCallBack);
+    FileToFlash(&LedFlash, "FPGA-LED-4M.bin", AllCallBack);
+    //FileToFlash(&ItFlash,  "IT8951-97.bin",   AllCallBack);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_SET);
@@ -236,7 +243,56 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void FileToFlash(void *obj, void *FileName, void (*EraseCallBack)(void *))
+{
+  if (obj == NULL)
+    return;
 
+  NORFLASH_OBJ *Obj = obj;
+
+  if (Obj->Desc == NULL)
+    return;
+
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
+
+  DIR     dir   = {0};
+  FILINFO finfo = {0};
+  TCHAR   lbuf[_MAX_LFN + 1] = {0};
+
+  finfo.lfname = lbuf;
+  finfo.lfsize = sizeof(lbuf);
+
+  retUSER = f_findfirst(&dir, &finfo, "", FileName);
+  if (retUSER != FR_OK)
+    return;
+
+  retUSER = f_open(&USERFile, finfo.fname, FA_READ);
+  if (retUSER != FR_OK)
+    return;
+
+  EraseCallBack(Obj);
+
+  // TODO: COPY FILE TO FLASH, DELETE FILE IF CHECKED.
+
+  //RETURN:
+  retUSER = f_close(&USERFile);
+}
+
+static void DatCallBack(void *obj)
+{
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
+  NORFLASH_OBJ *Obj = obj;
+
+  for (int i = 0; i < Obj->Desc->SizeK - 1024; i += Obj->Desc->BlkSizeK)
+    norflash->BlockErase(Obj, i * 1024);
+}
+
+static void AllCallBack(void *obj)
+{
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
+
+  norflash->ChipErase(obj);
+}
 /* USER CODE END 4 */
 
 /**
