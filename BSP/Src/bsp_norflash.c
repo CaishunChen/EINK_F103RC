@@ -260,7 +260,7 @@ static void soft_reset(void *obj)
     if (Obj->Desc == NULL)
         return;
 
-    if (Obj->Desc->Jedec & 0xFF0000 == 0xEF0000)
+    if ((Obj->Desc->Jedec & 0xFF0000) == 0xEF0000)
     {
         CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
         HAL_SPI_Transmit(Obj->Handle, (uint8_t[]){0x66}, 1, HAL_MAX_DELAY);
