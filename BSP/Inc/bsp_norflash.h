@@ -26,6 +26,8 @@ typedef struct _NORFLASH_API {
     void (*Init)(void *);
     void (*DataRead)(void *, int, void *, int);
     void (*DataWrite)(void *, int, void *, int);
+    void (*BlockErase)(void *, int);
+    void (*ChipErase)(void *);
 } NORFLASH_API;
 
 void *BSP_NORFLASH_API(void);

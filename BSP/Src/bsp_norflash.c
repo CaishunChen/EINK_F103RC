@@ -70,6 +70,44 @@ static void wait_busy(void *obj)
     CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 }
 
+static void chip_erase(void *obj)
+{
+    if (obj == NULL)
+        return;
+
+    NORFLASH_OBJ *Obj = obj;
+
+    write_enable(obj);
+    wait_write_enable(obj);
+
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0xC7}, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+    wait_busy(obj);
+}
+
+static void block_erase(void *obj, int addr)
+{
+    if (obj == NULL)
+        return;
+
+    NORFLASH_OBJ *Obj = obj;
+
+    addr <<= 8;
+    addr = __REV(addr);
+
+    write_enable(obj);
+    wait_write_enable(obj);
+
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0xD8}, 1, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t *)&addr, 3, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+    wait_busy(obj);
+}
+
 static void data_read(void *obj, int addr, void *buf, int length)
 {
     if (obj == NULL)
@@ -273,9 +311,11 @@ static void init(void *obj)
 void *BSP_NORFLASH_API(void)
 {
     static NORFLASH_API api = {
-        .Init      = init,
-        .DataRead  = data_read,
-        .DataWrite = data_write,
+        .Init       = init,
+        .DataRead   = data_read,
+        .DataWrite  = data_write,
+        .BlockErase = block_erase,
+        .ChipErase  = chip_erase,
     };
 
     return &api;
