@@ -5,8 +5,10 @@
 typedef struct _NORFLASH_DESC {
     char *Name;
     int   Jedec;
-    int   Sectors;
-    int   SecSize;
+    int   PgSizeB;
+    int   SecSizeK;
+    int   BlkSizeK;
+    int   SizeK;
 } NORFLASH_DESC;
 
 typedef struct _NORFLASH_CS {

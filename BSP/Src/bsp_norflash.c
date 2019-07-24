@@ -6,17 +6,18 @@
 #define CS_High(GPIO, Pin) (((GPIO_TypeDef *)GPIO)->BSRR = Pin)
 #define CS_Low(GPIO, Pin)  (((GPIO_TypeDef *)GPIO)->BSRR = Pin << 16)
 
-#define NOR_PAGE_SIZE   0x100
-#define NOR_SECTOR_SIZE 0x1000
-#define AND_NOR_SECTOR  0xFFFFF000
+#define NOR_SECTOR_SIZE (4 * 1024)
 
 static char nor_buf[NOR_SECTOR_SIZE] = {0};
 
-static const NORFLASH_DESC descs[] = {
-    {"W25Q128JV", 0xEF4018, 0x1000, 0x1000},
+static const NORFLASH_DESC Descs[] = {
+    {"W25Q128",   0xEF4018, 256, 4, 64, 16 * 1024},
+    {"W25Q64",    0xEF4017, 256, 4, 64,  8 * 1024},
+    {"W25Q32",    0xEF4016, 256, 4, 64,  4 * 1024},
+    {"MX25L3206", 0xC22016, 256, 4, 64,  4 * 1024},
 };
 
-#define DESCS_NUM (sizeof(descs)/sizeof(NORFLASH_DESC))
+#define DESCS_NUM (sizeof(Descs)/sizeof(NORFLASH_DESC))
 
 static void *find_desc(int jedec)
 {
@@ -25,9 +26,9 @@ static void *find_desc(int jedec)
 
     for (i = 0; i < DESCS_NUM; i++)
     {
-        if (jedec == descs[i].Jedec)
+        if (jedec == Descs[i].Jedec)
         {
-            desc = (void *)&descs[i];
+            desc = (void *)&Descs[i];
             break;
         }
     }
@@ -75,6 +76,9 @@ static void data_read(void *obj, int addr, void *buf, int length)
         return;
 
     NORFLASH_OBJ *Obj = obj;
+
+    if (Obj->Desc == NULL)
+        return;
 
     addr <<= 8;
     addr = __REV(addr);
@@ -141,6 +145,11 @@ static void data_write(void *obj, int addr, void *buf, int length)
     if (obj == NULL)
         return;
 
+    NORFLASH_OBJ *Obj = obj;
+
+    if (Obj->Desc == NULL)
+        return;
+
     int  Length = 0;
     int  inPageLength = 0;
     char *pData = NULL;
@@ -148,8 +157,8 @@ static void data_write(void *obj, int addr, void *buf, int length)
 
     while(length > 0)
     {
-        if((addr % NOR_SECTOR_SIZE) + length > NOR_SECTOR_SIZE)
-            Length = NOR_SECTOR_SIZE - (addr % NOR_SECTOR_SIZE);
+        if((addr % (Obj->Desc->SecSizeK * 1024)) + length > (Obj->Desc->SecSizeK * 1024))
+            Length = (Obj->Desc->SecSizeK * 1024) - (addr % (Obj->Desc->SecSizeK * 1024));
         else
             Length = length;
 
@@ -160,8 +169,8 @@ static void data_write(void *obj, int addr, void *buf, int length)
             while(Length > 0)
             {
                 //写入数据截断在Page内
-                if((addr % NOR_PAGE_SIZE) + Length > NOR_PAGE_SIZE)
-                    inPageLength = NOR_PAGE_SIZE - (addr % NOR_PAGE_SIZE);
+                if((addr % Obj->Desc->PgSizeB) + Length > Obj->Desc->PgSizeB)
+                    inPageLength = Obj->Desc->PgSizeB - (addr % Obj->Desc->PgSizeB);
                 else
                     inPageLength = Length;
 
@@ -176,9 +185,9 @@ static void data_write(void *obj, int addr, void *buf, int length)
         else
         {
             //为非空时，将数据拷贝至Buffer对应位置
-            data_read(obj, addr & AND_NOR_SECTOR, nor_buf, NOR_SECTOR_SIZE);
+            data_read(obj, addr & 0xFFFFF000, nor_buf, Obj->Desc->SecSizeK * 1024);
 
-            pData = nor_buf + addr % NOR_SECTOR_SIZE;
+            pData = nor_buf + addr % (Obj->Desc->SecSizeK * 1024);
 
             for(uint32_t i = 0; i < Length; i++)
                 *pData++ = *wData++;
@@ -187,8 +196,8 @@ static void data_write(void *obj, int addr, void *buf, int length)
             pData = nor_buf;
 
             length -= Length;
-            addr   &= AND_NOR_SECTOR;
-            Length  = NOR_SECTOR_SIZE;
+            addr   &= 0xFFFFF000;
+            Length  = Obj->Desc->SecSizeK * 1024;
 
             //擦除写入位置所在Sector
             sector_erase(obj, addr);
@@ -196,13 +205,32 @@ static void data_write(void *obj, int addr, void *buf, int length)
             //写入Buffer
             while(Length > 0)
             {
-                page_program(obj, addr, pData, NOR_PAGE_SIZE);
+                page_program(obj, addr, pData, Obj->Desc->PgSizeB);
 
-                addr   += NOR_PAGE_SIZE;
-                pData  += NOR_PAGE_SIZE;
-                Length -= NOR_PAGE_SIZE;
+                addr   += Obj->Desc->PgSizeB;
+                pData  += Obj->Desc->PgSizeB;
+                Length -= Obj->Desc->PgSizeB;
             }
         }
+    }
+}
+
+static void soft_reset(void *obj)
+{
+    NORFLASH_OBJ *Obj = obj;
+
+    if (Obj->Desc == NULL)
+        return;
+
+    if (Obj->Desc->Jedec & 0xFF0000 == 0xEF0000)
+    {
+        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+        HAL_SPI_Transmit(Obj->Handle, (uint8_t[]){0x66}, 1, HAL_MAX_DELAY);
+        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+        HAL_SPI_Transmit(Obj->Handle, (uint8_t[]){0x99}, 1, HAL_MAX_DELAY);
+        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
     }
 }
 
@@ -217,19 +245,6 @@ static int read_jedec(void *obj)
     CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 
     return __REV(jedec << 8);
-}
-
-static void soft_reset(void *obj)
-{
-    NORFLASH_OBJ *Obj = obj;
-
-    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
-    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x66}, 1, HAL_MAX_DELAY);
-    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
-
-    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
-    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x99}, 1, HAL_MAX_DELAY);
-    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 }
 
 static void init(void *obj)
@@ -252,8 +267,7 @@ static void init(void *obj)
 
     Obj->Desc = find_desc(read_jedec(obj));
 
-    if ((Obj->Desc) && ((Obj->Desc->Jedec & 0xFF0000) == 0xEF0000))
-        soft_reset(obj);
+    soft_reset(obj);
 }
 
 void *BSP_NORFLASH_API(void)

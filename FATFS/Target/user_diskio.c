@@ -72,7 +72,7 @@
 /* Disk status */
 static volatile DSTATUS Stat = STA_NOINIT;
 
-#define STORAGE_BLK_OFF (0x100)
+#define STORAGE_SIZEK_OFF (1 * 1024)
 extern NORFLASH_OBJ FatFlash;
 /* USER CODE END DECL */
 
@@ -149,7 +149,7 @@ DRESULT USER_read (
 {
   /* USER CODE BEGIN READ */
     NORFLASH_API *norapi = BSP_NORFLASH_API();
-    norapi->DataRead(&FatFlash, (STORAGE_BLK_OFF + sector) * FatFlash.Desc->SecSize, (void *)buff, count * FatFlash.Desc->SecSize);
+    norapi->DataRead(&FatFlash, (STORAGE_SIZEK_OFF / 4 + sector) * FatFlash.Desc->SecSizeK * 1024, (void *)buff, count * FatFlash.Desc->SecSizeK * 1024);
     return RES_OK;
   /* USER CODE END READ */
 }
@@ -173,7 +173,7 @@ DRESULT USER_write (
   /* USER CODE BEGIN WRITE */
   /* USER CODE HERE */
     NORFLASH_API *norapi = BSP_NORFLASH_API();
-    norapi->DataWrite(&FatFlash, (STORAGE_BLK_OFF + sector) * FatFlash.Desc->SecSize, (void *)buff, count * FatFlash.Desc->SecSize);
+    norapi->DataWrite(&FatFlash, (STORAGE_SIZEK_OFF / 4 + sector) * FatFlash.Desc->SecSizeK * 1024, (void *)buff, count * FatFlash.Desc->SecSizeK * 1024);
     return RES_OK;
   /* USER CODE END WRITE */
 }
@@ -201,11 +201,11 @@ DRESULT USER_ioctl (
         res = RES_OK;
         break;
       case GET_SECTOR_SIZE:
-        *(WORD*)buff = FatFlash.Desc->SecSize;
+        *(WORD*)buff = FatFlash.Desc->SecSizeK * 1024;
         res = RES_OK;
         break;
       case GET_SECTOR_COUNT:
-        *(DWORD*)buff = FatFlash.Desc->Sectors - STORAGE_BLK_OFF;
+        *(DWORD*)buff = (FatFlash.Desc->SizeK - STORAGE_SIZEK_OFF) / 4;
         res = RES_OK;
         break;
       case GET_BLOCK_SIZE:
