@@ -17,13 +17,12 @@ static const NORFLASH_DESC Descs[] = {
     {"MX25L3206", 0xC22016, 256, 4, 64,  4 * 1024},
 };
 
-#define OBJ_MFR_BYTE(OBJ)     ((NORFLASH_OBJ *)OBJ->Desc->Jedec & 0xFF0000)
+#define OBJ_MFR_BYTE(OBJ)     (((NORFLASH_OBJ *)OBJ)->Desc->Jedec & 0xFF0000)
 
 #define MFR_WINBOND           (0xEF)
 #define MFR_MACRONIX          (0xC2)
 
 #define IS_MFR_CHIP(OBJ, MFR) (OBJ_MFR_BYTE(OBJ) == (MFR << 16))
-
 #define IS_WINBOND_CHIP(OBJ)  IS_MFR_CHIP(OBJ, MFR_WINBOND)
 
 #define DESCS_NUM (sizeof(Descs)/sizeof(NORFLASH_DESC))
