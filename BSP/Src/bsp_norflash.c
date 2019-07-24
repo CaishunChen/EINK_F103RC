@@ -17,6 +17,15 @@ static const NORFLASH_DESC Descs[] = {
     {"MX25L3206", 0xC22016, 256, 4, 64,  4 * 1024},
 };
 
+#define OBJ_MFR_BYTE(OBJ)     ((NORFLASH_OBJ *)OBJ->Desc->Jedec & 0xFF0000)
+
+#define MFR_WINBOND           (0xEF)
+#define MFR_MACRONIX          (0xC2)
+
+#define IS_MFR_CHIP(OBJ, MFR) (OBJ_MFR_BYTE(OBJ) == (MFR << 16))
+
+#define IS_WINBOND_CHIP(OBJ)  IS_MFR_CHIP(OBJ, MFR_WINBOND)
+
 #define DESCS_NUM (sizeof(Descs)/sizeof(NORFLASH_DESC))
 
 static void *find_desc(int jedec)
@@ -253,6 +262,53 @@ static void data_write(void *obj, int addr, void *buf, int length)
     }
 }
 
+static void protect_remove(void *obj)
+{
+    NORFLASH_OBJ *Obj = obj;
+
+    if (Obj->Desc == NULL)
+        return;
+
+    uint8_t status = 0;
+
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x05}, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+    status &= ~0x7C;
+
+    write_enable(obj);
+    wait_write_enable(obj);
+
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x01}, 1, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+    wait_busy(obj);
+
+    if (IS_WINBOND_CHIP(Obj))
+    {
+        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+        HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x35}, 1, HAL_MAX_DELAY);
+        HAL_SPI_Receive(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+        status &= ~0x40;
+
+        write_enable(obj);
+        wait_write_enable(obj);
+
+        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+        HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x31}, 1, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+        wait_busy(obj);
+    }
+}
+
 static void soft_reset(void *obj)
 {
     NORFLASH_OBJ *Obj = obj;
@@ -260,7 +316,7 @@ static void soft_reset(void *obj)
     if (Obj->Desc == NULL)
         return;
 
-    if ((Obj->Desc->Jedec & 0xFF0000) == 0xEF0000)
+    if (IS_WINBOND_CHIP(Obj))
     {
         CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
         HAL_SPI_Transmit(Obj->Handle, (uint8_t[]){0x66}, 1, HAL_MAX_DELAY);
@@ -306,6 +362,8 @@ static void init(void *obj)
     Obj->Desc = find_desc(read_jedec(obj));
 
     soft_reset(obj);
+
+    protect_remove(obj);
 }
 
 void *BSP_NORFLASH_API(void)
