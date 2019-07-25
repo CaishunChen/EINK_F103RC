@@ -155,9 +155,7 @@ int main(void)
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_SET);
 
   if (state == 0)
-  {
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -359,6 +357,8 @@ static void FileToFlash(void *obj, int SizeK, void *FileName, void (*EraseCallBa
   finfo.lfname = lbuf;
   finfo.lfsize = sizeof(lbuf);
 
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+
   retUSER = f_findfirst(&dir, &finfo, "", FileName);
   if (retUSER != FR_OK)
     return;
@@ -386,7 +386,12 @@ static void FileToFlash(void *obj, int SizeK, void *FileName, void (*EraseCallBa
     if ((retUSER != FR_OK) || (rcnt != length))
       goto RETURN;
 
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_1);
+
     norflash->DataWrite(Obj, fileptr, fatbuf, length);
+
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_1);
+
     norflash->DataRead(Obj, fileptr, norbuf, length);
 
     for (int i = 0; i < length; i++)
@@ -406,6 +411,8 @@ RETURN:
 
   if (check_pass)
     f_unlink(finfo.fname);
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
 }
 
 static void U9_CallBack(void *obj)
