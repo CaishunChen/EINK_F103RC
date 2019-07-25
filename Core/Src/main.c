@@ -56,6 +56,10 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include "bsp_norflash.h"
 /* USER CODE END Includes */
 
@@ -75,12 +79,14 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+static void FileVoltage(void *);
 static void FileToFlash(void *, int, void *, void (*)(void *));
 static void U9_CallBack(void *);
 static void AllCallBack(void *);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+#define FILE_NAME_CFG "config.txt"
 #define FILE_NAME_U9  "FPGA-DATA.bin"
 #define FILE_NAME_U10 "FPGA-LED-4M.bin"
 #define FILE_NAME_U25 "IT8951-97.bin"
@@ -132,6 +138,8 @@ int main(void)
   retUSER = f_mount(&USERFatFS, USERPath, 1);
   if (retUSER != FR_OK)
     retUSER = f_mkfs(USERPath, 0, 4096);
+
+  FileVoltage(&FatFlash, FILE_NAME_CFG);
 
   if (state == 0)
   {
@@ -245,6 +253,82 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void FileVoltage(void *obj, void *FileName)
+{
+  if (obj == NULL)
+    return;
+
+  NORFLASH_OBJ *Obj = obj;
+
+  if (Obj->Desc == NULL)
+    return;
+
+  NORFLASH_API *norflash = BSP_NORFLASH_API();
+
+  char  linebuf[32] = {0};
+  int   rwcnt       = 0;
+  float vcomflash   = 0;
+  float vcomfile    = 0;
+  int   needcreate  = 1;
+
+  DIR     dir   = {0};
+  FILINFO finfo = {0};
+  TCHAR   lbuf[_MAX_LFN + 1] = {0};
+
+  finfo.lfname = lbuf;
+  finfo.lfsize = sizeof(lbuf);
+
+  norflash->DataRead(Obj, 0, &vcomflash, sizeof(float));
+  if (!isnormal(vcomflash))
+  {
+    vcomflash = 0;
+    norflash->DataWrite(Obj, 0, &vcomflash, sizeof(float));
+  }
+
+  retUSER = f_findfirst(&dir, &finfo, "", FileName);
+  if (retUSER != FR_OK)
+    goto CREATE_CFG;
+
+  retUSER = f_open(&USERFile, finfo.fname, FA_READ);
+  if (retUSER != FR_OK)
+    goto CREATE_CFG;
+
+  retUSER = f_read(&USERFile, linebuf, sizeof(linebuf), (UINT *)&rwcnt);
+  if (retUSER != FR_OK)
+    goto CLOSE_FILE;
+
+  if (strncmp(linebuf, "VCOM:", 5) != 0)
+    goto CLOSE_FILE;
+
+  vcomfile = atof(&linebuf[5]);
+  if (!isnormal(vcomfile))
+    goto CLOSE_FILE;
+
+  if (vcomflash != vcomfile)
+    norflash->DataWrite(Obj, 0, &vcomfile, sizeof(float));
+
+  needcreate = 0;
+
+CLOSE_FILE:
+  retUSER = f_close(&USERFile);
+
+CREATE_CFG:
+  if (!needcreate)
+    return;
+
+  retUSER = f_open(&USERFile, FileName, FA_CREATE_ALWAYS | FA_WRITE);
+  if (retUSER != FR_OK)
+    return;
+
+  memset(linebuf, 0, sizeof(linebuf));
+
+  snprintf(linebuf, sizeof(linebuf), "VCOM:%.3f", vcomflash);
+
+  retUSER = f_write(&USERFile, linebuf, strlen(linebuf), &rwcnt);
+
+  retUSER = f_close(&USERFile);
+}
+
 #define BUF_LENS (1024)
 
 static void FileToFlash(void *obj, int SizeK, void *FileName, void (*EraseCallBack)(void *))
