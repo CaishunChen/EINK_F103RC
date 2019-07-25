@@ -75,7 +75,7 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-static void FileToFlash(void *, void *, void (*)(void *));
+static void FileToFlash(void *, int, void *, void (*)(void *));
 static void U9_CallBack(void *);
 static void AllCallBack(void *);
 /* USER CODE END PFP */
@@ -139,9 +139,9 @@ int main(void)
     norflash->Init(&Flash_U10);
     norflash->Init(&Flash_U25);
 
-    FileToFlash(&Flash_U9,  FILE_NAME_U9,  U9_CallBack);
-    FileToFlash(&Flash_U10, FILE_NAME_U10, AllCallBack);
-    FileToFlash(&Flash_U25, FILE_NAME_U25, AllCallBack);
+    FileToFlash(&Flash_U9,  Flash_U9.Desc->SizeK - 1024, FILE_NAME_U9,  U9_CallBack);
+    FileToFlash(&Flash_U10, Flash_U10.Desc->SizeK,       FILE_NAME_U10, AllCallBack);
+    FileToFlash(&Flash_U25, Flash_U25.Desc->SizeK,       FILE_NAME_U25, AllCallBack);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_SET);
@@ -245,7 +245,9 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-static void FileToFlash(void *obj, void *FileName, void (*EraseCallBack)(void *))
+#define BUF_LENS (1024)
+
+static void FileToFlash(void *obj, int SizeK, void *FileName, void (*EraseCallBack)(void *))
 {
   if (obj == NULL)
     return;
@@ -257,11 +259,18 @@ static void FileToFlash(void *obj, void *FileName, void (*EraseCallBack)(void *)
 
   NORFLASH_API *norflash = BSP_NORFLASH_API();
 
+  char fatbuf[BUF_LENS] = {0};
+  char norbuf[BUF_LENS] = {0};
+
+  int  filesize   = 0;
+  int  fileptr    = 0;
+  int  length     = 0;
+  int  rcnt       = 0;
+  int  check_pass = 0;
+
   DIR     dir   = {0};
   FILINFO finfo = {0};
   TCHAR   lbuf[_MAX_LFN + 1] = {0};
-
-  int check_pass = 0;
 
   finfo.lfname = lbuf;
   finfo.lfsize = sizeof(lbuf);
@@ -276,7 +285,37 @@ static void FileToFlash(void *obj, void *FileName, void (*EraseCallBack)(void *)
 
   EraseCallBack(Obj);
 
-  // TODO: COPY FILE TO FLASH, DELETE FILE IF CHECKED.
+  filesize = f_size(&USERFile);
+  fileptr  = 0;
+
+  if (filesize > SizeK * 1024)
+    filesize = SizeK * 1024;
+
+  while (fileptr < filesize)
+  {
+    if (filesize - fileptr > sizeof(fatbuf))
+      length = sizeof(fatbuf);
+    else
+      length = filesize - fileptr;
+
+    retUSER = f_read(&USERFile, fatbuf, length, (UINT *)&rcnt);
+    if ((retUSER != FR_OK) || (rcnt != length))
+      goto RETURN;
+
+    norflash->DataWrite(Obj, fileptr, fatbuf, length);
+    norflash->DataRead(Obj, fileptr, norbuf, length);
+
+    for (int i = 0; i < length; i++)
+    {
+      if (norbuf[i] != fatbuf[i])
+        goto RETURN;
+    }
+
+    fileptr += length;
+  }
+
+  if (fileptr == filesize)
+    check_pass = 1;
 
 RETURN:
   retUSER = f_close(&USERFile);

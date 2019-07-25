@@ -260,7 +260,6 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 {
   /* USER CODE BEGIN 6 */
   NORFLASH_API *norflash = BSP_NORFLASH_API();
-  HAL_IWDG_Refresh(&hiwdg);
   norflash->DataRead(&FatFlash, (STORAGE_SIZEK_OFF / 4 + blk_addr) * FatFlash.Desc->SecSizeK * 1024, buf, blk_len * FatFlash.Desc->SecSizeK * 1024);
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -275,7 +274,6 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
 {
   /* USER CODE BEGIN 7 */
   NORFLASH_API *norflash = BSP_NORFLASH_API();
-  HAL_IWDG_Refresh(&hiwdg);
   norflash->DataWrite(&FatFlash, (STORAGE_SIZEK_OFF / 4 + blk_addr) * FatFlash.Desc->SecSizeK * 1024, buf, blk_len * FatFlash.Desc->SecSizeK * 1024);
   return (USBD_OK);
   /* USER CODE END 7 */
