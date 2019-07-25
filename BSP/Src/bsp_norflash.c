@@ -295,25 +295,25 @@ static void protect_remove(void *obj)
 
     wait_busy(obj);
 
-    if (IS_WINBOND_CHIP(Obj))
-    {
-        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
-        HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x35}, 1, HAL_MAX_DELAY);
-        HAL_SPI_Receive(Obj->Handle, &status, 1, HAL_MAX_DELAY);
-        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+    if (!IS_WINBOND_CHIP(Obj))
+        return;
 
-        status &= ~0x40;
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x35}, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 
-        write_enable(obj);
-        wait_write_enable(obj);
+    status &= ~0x40;
 
-        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
-        HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x31}, 1, HAL_MAX_DELAY);
-        HAL_SPI_Transmit(Obj->Handle, &status, 1, HAL_MAX_DELAY);
-        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+    write_enable(obj);
+    wait_write_enable(obj);
 
-        wait_busy(obj);
-    }
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x31}, 1, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(Obj->Handle, &status, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+    wait_busy(obj);
 }
 
 static void soft_reset(void *obj)
@@ -323,16 +323,16 @@ static void soft_reset(void *obj)
     if (Obj->Desc == NULL)
         return;
 
-    if (IS_WINBOND_CHIP(Obj))
-    {
-        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
-        HAL_SPI_Transmit(Obj->Handle, (uint8_t[]){0x66}, 1, HAL_MAX_DELAY);
-        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+    if (!IS_WINBOND_CHIP(Obj))
+        return;
 
-        CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
-        HAL_SPI_Transmit(Obj->Handle, (uint8_t[]){0x99}, 1, HAL_MAX_DELAY);
-        CS_High(Obj->CS.GPIO, Obj->CS.Pin);
-    }
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x66}, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
+
+    CS_Low(Obj->CS.GPIO, Obj->CS.Pin);
+    HAL_SPI_Transmit(Obj->Handle, (uint8_t []){0x99}, 1, HAL_MAX_DELAY);
+    CS_High(Obj->CS.GPIO, Obj->CS.Pin);
 }
 
 static int read_jedec(void *obj)
