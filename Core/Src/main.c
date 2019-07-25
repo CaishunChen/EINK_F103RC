@@ -79,7 +79,7 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-static void FileVoltage(void *);
+static void FileVoltage(void *, void *);
 static void FileToFlash(void *, int, void *, void (*)(void *));
 static void U9_CallBack(void *);
 static void AllCallBack(void *);
@@ -324,7 +324,7 @@ CREATE_CFG:
 
   snprintf(linebuf, sizeof(linebuf), "VCOM:%.3f", vcomflash);
 
-  retUSER = f_write(&USERFile, linebuf, strlen(linebuf), &rwcnt);
+  retUSER = f_write(&USERFile, linebuf, strlen(linebuf), (UINT *)&rwcnt);
 
   retUSER = f_close(&USERFile);
 }
