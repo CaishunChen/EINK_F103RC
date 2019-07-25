@@ -81,7 +81,9 @@ static void AllCallBack(void *);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+#define FILE_NAME_U9  "FPGA-DATA.bin"
+#define FILE_NAME_U10 "FPGA-LED-4M.bin"
+#define FILE_NAME_U25 "IT8951-97.bin"
 /* USER CODE END 0 */
 
 /**
@@ -137,9 +139,9 @@ int main(void)
     norflash->Init(&LedFlash);
     //norflash->Init(&ItFlash);
 
-    FileToFlash(&DatFlash, "FPGA-DATA.bin",   DatCallBack);
-    FileToFlash(&LedFlash, "FPGA-LED-4M.bin", AllCallBack);
-    //FileToFlash(&ItFlash,  "IT8951-97.bin",   AllCallBack);
+    FileToFlash(&DatFlash,  FILE_NAME_U9,  DatCallBack);
+    FileToFlash(&LedFlash,  FILE_NAME_U10, AllCallBack);
+    //FileToFlash(&ItFlash,   FILE_NAME_U25, AllCallBack);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_SET);
