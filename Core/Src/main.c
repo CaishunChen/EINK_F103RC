@@ -65,9 +65,9 @@
 /* Private variables ---------------------------------------------------------*/
 NORFLASH_OBJ FatFlash = {&hspi1, {GPIOA, GPIO_PIN_4}, NULL};
 
-static NORFLASH_OBJ DatFlash = {&hspi2, {GPIOC, GPIO_PIN_8}, NULL};
-static NORFLASH_OBJ LedFlash = {&hspi2, {GPIOC, GPIO_PIN_7}, NULL};
-//static NORFLASH_OBJ ItFlash  = {&hspi2, {GPIOC, GPIO_PIN_6}, NULL};
+static NORFLASH_OBJ Flash_U9  = {&hspi2, {GPIOC, GPIO_PIN_8}, NULL};
+static NORFLASH_OBJ Flash_U10 = {&hspi2, {GPIOC, GPIO_PIN_7}, NULL};
+static NORFLASH_OBJ Flash_U25 = {&hspi2, {GPIOC, GPIO_PIN_6}, NULL};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,7 +76,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 static void FileToFlash(void *, void *, void (*)(void *));
-static void DatCallBack(void *);
+static void U9_CallBack(void *);
 static void AllCallBack(void *);
 /* USER CODE END PFP */
 
@@ -135,13 +135,13 @@ int main(void)
 
   if (state == 0)
   {
-    norflash->Init(&DatFlash);
-    norflash->Init(&LedFlash);
-    //norflash->Init(&ItFlash);
+    norflash->Init(&Flash_U9);
+    norflash->Init(&Flash_U10);
+    norflash->Init(&Flash_U25);
 
-    FileToFlash(&DatFlash,  FILE_NAME_U9,  DatCallBack);
-    FileToFlash(&LedFlash,  FILE_NAME_U10, AllCallBack);
-    //FileToFlash(&ItFlash,   FILE_NAME_U25, AllCallBack);
+    FileToFlash(&Flash_U9,  FILE_NAME_U9,  U9_CallBack);
+    FileToFlash(&Flash_U10, FILE_NAME_U10, AllCallBack);
+    FileToFlash(&Flash_U25, FILE_NAME_U25, AllCallBack);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_SET);
@@ -261,6 +261,8 @@ static void FileToFlash(void *obj, void *FileName, void (*EraseCallBack)(void *)
   FILINFO finfo = {0};
   TCHAR   lbuf[_MAX_LFN + 1] = {0};
 
+  int check_pass = 0;
+
   finfo.lfname = lbuf;
   finfo.lfsize = sizeof(lbuf);
 
@@ -276,11 +278,14 @@ static void FileToFlash(void *obj, void *FileName, void (*EraseCallBack)(void *)
 
   // TODO: COPY FILE TO FLASH, DELETE FILE IF CHECKED.
 
-  //RETURN:
+RETURN:
   retUSER = f_close(&USERFile);
+
+  if (check_pass)
+    f_unlink(finfo.fname);
 }
 
-static void DatCallBack(void *obj)
+static void U9_CallBack(void *obj)
 {
   NORFLASH_API *norflash = BSP_NORFLASH_API();
   NORFLASH_OBJ *Obj = obj;
