@@ -11,14 +11,12 @@ typedef struct _NORFLASH_DESC {
     int   SizeK;
 } NORFLASH_DESC;
 
-typedef struct _NORFLASH_CS {
-    void *GPIO;
-    int   Pin;
-} NORFLASH_CS;
-
 typedef struct _NORFLASH_OBJ {
-    void          *Handle;
-    NORFLASH_CS    CS;
+    void *Handle;
+    struct {
+        void *GPIO;
+        int   Pin;
+    } CS;
     NORFLASH_DESC *Desc;
 } NORFLASH_OBJ;
 
